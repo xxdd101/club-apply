@@ -1,0 +1,74 @@
+name: Bug 报告
+description: 报告一个可以复现的问题
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量填完整，能省掉很多来回确认的时间。
+        如果你的问题涉及**安全漏洞**（越权、任意文件读取、注入等），请不要在这里公开，改为私下联系维护者。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 描述实际看到的现象，以及你期望的现象
+      placeholder: 例如：提交带 6 张图片的申请后，后台详情页只显示 5 张
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 越具体越好，最好能从"打开首页"开始
+      placeholder: |
+        1. 打开 / 选择 COS 部
+        2. 上传 6 张图片
+        3. 提交
+        4. 登录后台 → 打开该申请
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: Release 版本号，或 `git log -1 --format=%h` 的输出
+      placeholder: v2.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: env
+    attributes:
+      label: 运行环境
+      options:
+        - 本地 Windows
+        - 本地 macOS
+        - 本地 Linux
+        - 云服务器 / Docker
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js 版本
+      description: 运行 `node -v` 的结果
+      placeholder: v22.11.0
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志 / 报错
+      description: 浏览器控制台报错、`data/server.log` 片段、`journalctl -u club-apply` 输出等
+      render: shell
+
+  - type: textarea
+    id: config
+    attributes:
+      label: 你对 config/form.json 做过修改吗？
+      description: 如果改过，请贴出改动部分（**注意去掉任何真实个人信息**）
+      render: json

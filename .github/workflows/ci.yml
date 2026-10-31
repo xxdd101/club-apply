@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', '20', '22']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: 安装依赖
+        run: npm install --no-audit --no-fund
+
+      - name: 语法检查
+        run: |
+          set -e
+          for f in server.js show-address.js lib/*.js public/js/*.js tools/*.js; do
+            node --check "$f"
+          done
+          echo "全部通过"
+
+      - name: 校验 config/form.json
+        run: |
+          node -e "
+            const f = require('./config/form.json');
+            if (!Array.isArray(f.fields) || !f.fields.length) throw new Error('fields 为空');
+            const ids = new Set();
+            for (const x of f.fields) {
+              if (!x.id) throw new Error('字段缺少 id');
+              if (ids.has(x.id) && !['images','audio'].includes(x.type)) throw new Error('重复 id: ' + x.id);
+              ids.add(x.id);
+            }
+            console.log('字段定义 OK，共 ' + f.fields.length + ' 条');
+          "
+
+      - name: 启动服务
+        env:
+          DATA_DIR: ./data-ci
+          PORT: '3100'
+          HOST: 127.0.0.1
+          ADMIN_USER: admin
+          ADMIN_PASS: change-this-password
+          REBOOT_DRY_RUN: '1'
+        run: |
+          node server.js > /tmp/server.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3100/api/health > /dev/null; then
+              echo "服务已就绪"; curl -s http://127.0.0.1:3100/api/health; exit 0
+            fi
+            sleep 1
+          done
+          echo "服务启动超时"; cat /tmp/server.log; exit 1
+
+      - name: 接口测试
+        env:
+          BASE: http://127.0.0.1:3100
+        run: node tools/api-test.js
+
+      - name: 审核状态机测试
+        run: node tools/review-state-test.js
+
+      - name: 失败时输出服务日志
+        if: failure()
+        run: tail -n 100 /tmp/server.log || true

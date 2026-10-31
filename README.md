@@ -6,6 +6,8 @@
 [![Build](https://img.shields.io/badge/build-none-lightgrey.svg)](#)
 [![Database](https://img.shields.io/badge/database-JSON%20files-orange.svg)](#)
 
+[简体中文](README.md) | [English](README.en.md)
+
 一套开箱即用的**通用「申请表 + 审核流」系统**：**在线填表 → 附件上传 → 多人审核 → 状态自助查询**。
 
 纯 Node.js + 原生前端，**零构建、零数据库**（JSON 文件持久化，重启也不丢数据），
