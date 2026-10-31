@@ -1,0 +1,26 @@
+# 依赖
+node_modules/
+pnpm-lock.yaml
+
+# 运行数据（申请记录 / 上传附件 / 密钥，切勿提交）
+data/
+data-test/
+
+# 测试与调试产物
+tools/_probe/
+tools/_shots/
+tools/_fixtures/
+
+# 部署产物与密钥（含私钥，绝对不要提交）
+dist/
+deploy_key
+deploy_key.pub
+*.pem
+
+# 系统
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+data-verify/
+data-seed/

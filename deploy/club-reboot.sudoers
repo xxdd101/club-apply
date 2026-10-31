@@ -1,0 +1,9 @@
+# 示例动漫社 · 入社申请审核系统
+# 允许应用服务（club-apply）无需密码调用**唯一一个**重启脚本。
+#
+# 安全说明：
+#   · 只放行这一个绝对路径的 root 只读脚本，没有通配符、没有 NOPASSWD: ALL；
+#   · 脚本 /usr/local/bin/club-reboot.sh 属于 root、权限 755，应用用户无法改写，
+#     所以应用（即使被入侵）能做的最大动作也只是「重启一次操作系统」；
+#   · 脚本自身还有 2 分钟防重复重启锁，重启不碰任何业务数据。
+club-apply ALL=(root) NOPASSWD: /usr/local/bin/club-reboot.sh

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>入社申请审核状态查询 · 示例动漫社</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="apple-touch-icon" href="/img/logo-mark.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header class="banner">
+  <div class="banner-inner">
+    <div class="brand-row">
+      <span class="brand-mark">
+        <img src="/img/logo-mark.png" alt="社团社徽" width="64" height="64">
+      </span>
+      <h1>入社申请审核状态查询</h1>
+    </div>
+    <p>输入您在填写入社申请表时使用的 CN 或代称，即可查询当前审核进度。本页面仅供社员自查，不能修改表单内容。</p>
+    <span class="tag">审核系统提交及审核时间：9:00-23:59</span>
+    <div class="nav-links">
+      <a href="/">← 返回入社申请表</a>
+      <a href="/admin">→ 审核管理后台</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap wrap-mid">
+
+  <div class="card">
+    <h2 class="card-title">请输入您的 CN 或代称</h2>
+    <div class="row" style="align-items:flex-start">
+      <div style="flex:1 1 260px">
+        <input type="text" id="cnInput" maxlength="50" placeholder="例如：星野澪" autocomplete="off">
+      </div>
+      <div style="flex:0 0 auto">
+        <button class="btn btn-primary" id="queryBtn" type="button" style="height:38px">查询</button>
+      </div>
+    </div>
+    <div class="q-hint">请输入<b>完整的 CN</b>，需与提交申请表时填写的完全一致（本查询为精确匹配，不支持模糊搜索）。</div>
+  </div>
+
+  <!-- 查询 loading 动画 -->
+  <div class="query-loading" id="queryLoading" style="display:none" role="status" aria-live="polite">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>正在查询审核进度…</span>
+  </div>
+
+  <div id="resultArea"></div>
+
+</main>
+
+<footer class="site-footer">本页面属于示例动漫社管理。</footer>
+
+<!-- ---------- 提交复审确认弹窗 ---------- -->
+<div class="modal-mask" id="resubmitModal">
+  <div class="modal">
+    <div class="modal-head">提交复审</div>
+    <div class="modal-body">
+      <p style="margin:0 0 12px;font-size:15px;font-weight:600">您确认修改并重新复审吗？</p>
+      <!-- 复审机会说明由 status.js 按「第几次 / 是否最后一次」动态填充 -->
+      <div class="notice notice-warn small" id="rsNotice">
+        ⚠️ 每份申请表最多可提交 <b>2 次</b>复审：初审被拒绝或被退回后有 1 次机会，
+        复审被退回后再获得 1 次机会；复审被拒绝则不再提供机会。
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label for="rsQq">请填写申请时使用的 QQ号以验证身份 <span style="color:#e0484d">*</span></label>
+        <input type="text" id="rsQq" maxlength="11" inputmode="numeric"
+               autocomplete="off" placeholder="请输入 5-11 位QQ号">
+      </div>
+      <div class="q-error" id="rsErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" id="rsCancel">取消</button>
+      <button class="btn btn-primary" type="button" id="rsOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 催促审核成功提示 ---------- -->
+<div class="modal-mask" id="urgeOkModal" data-static="1">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">催促审核已提交</div>
+    <div class="modal-body">
+      <div class="notice notice-ok" style="font-size:14.5px;font-weight:600" id="urgeOkMsg">
+        已提交催促提醒，审核人员将尽快查看，请耐心等待。
+      </div>
+      <div class="small muted" style="margin-top:10px">
+        同一份申请表 1 小时内最多催促 1 次，感谢理解与配合。
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" type="button" id="urgeOkClose">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/common.js"></script>
+<script src="/js/status.js"></script>
+</body>
+</html>

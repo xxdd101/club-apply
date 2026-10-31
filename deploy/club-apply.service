@@ -1,0 +1,47 @@
+# =============================================================================
+# systemd 服务单元 —— 参考模板（一键脚本会自动生成，无需手动创建）
+#
+# 手动部署步骤：
+#   1) sudo useradd -r -s /sbin/nologin -d /opt/club-apply club-apply
+#   2) 把项目放到 /opt/club-apply，安装运行依赖（exceljs / jimp）：
+#        cd /opt/club-apply && sudo npm install --omit=dev
+#      并创建凭据文件：
+#        sudo tee /opt/club-apply/data/env >/dev/null <<'ENV'
+#        PORT=3000
+#        ADMIN_USER=admin
+#        ADMIN_PASS=请改成你自己的强密码
+#        ENV
+#      sudo chown -R club-apply:club-apply /opt/club-apply
+#      sudo chmod 600 /opt/club-apply/data/env
+#   3) sudo cp deploy/club-apply.service /etc/systemd/system/
+#      （若 node 不在 /usr/local/bin/node，请修改下面的 ExecStart）
+#   4) sudo systemctl daemon-reload
+#      sudo systemctl enable --now club-apply
+#      sudo systemctl status club-apply
+# =============================================================================
+
+[Unit]
+Description=Club Application Review System
+After=network.target
+
+[Service]
+Type=simple
+User=club-apply
+WorkingDirectory=/opt/club-apply
+
+# 端口与管理员账号密码从环境文件读取（改完执行 daemon-reload + restart 生效）
+# 用独立文件而不是 Environment=，密码含空格/引号/# 也不会解析出错
+EnvironmentFile=/opt/club-apply/data/env
+
+ExecStart=/usr/local/bin/node /opt/club-apply/server.js
+
+# 崩溃自动拉起
+Restart=always
+RestartSec=3
+
+# 日志写入文件，方便直接查看（需要 systemd ≥ 240；更低版本会自动省略）
+StandardOutput=append:/opt/club-apply/data/server.log
+StandardError=append:/opt/club-apply/data/server.log
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>审核管理后台 · 示例动漫社</title>
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<link rel="apple-touch-icon" href="/img/logo-mark.png">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ================= 登录成功入场动画（仅在登录成功后播放一次） ================= -->
+<div class="welcome-overlay" id="welcomeOverlay" role="status" aria-live="polite" aria-hidden="true" style="display:none">
+  <div class="welcome-card">
+    <div class="welcome-logo">
+      <img src="/img/logo-full.png" alt="示例动漫社" width="132" height="187">
+    </div>
+    <div class="welcome-title">欢迎访问示例动漫社审核系统</div>
+    <div class="welcome-sub" id="welcomeSub">入社申请 · 审核管理后台</div>
+    <div class="welcome-bar" aria-hidden="true"><i></i></div>
+  </div>
+</div>
+
+<!-- ================= 登录页 ================= -->
+<div class="login-page" id="viewLogin" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/img/logo-full.png" alt="示例动漫社" width="120" height="170">
+    </div>
+    <h1>示例动漫社</h1>
+    <div class="sub">入社申请 · 审核管理后台</div>
+    <form id="loginForm" autocomplete="off">
+      <div class="field">
+        <label for="username">管理员账号</label>
+        <input type="text" id="username" maxlength="50" placeholder="请输入账号" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="password">密码</label>
+        <input type="password" id="password" maxlength="200" placeholder="请输入密码" autocomplete="current-password">
+      </div>
+      <div class="notice notice-err" id="loginError" style="display:none"></div>
+      <button class="btn btn-primary" type="submit" id="loginBtn" style="width:100%;padding:11px">登录</button>
+    </form>
+    <div class="q-hint" style="margin-top:14px;text-align:center">
+      <a href="/">← 返回入社申请表</a> · <a href="/status">审核状态查询</a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 后台主体 ================= -->
+<div id="viewApp" style="display:none">
+  <header class="banner admin-header">
+    <div class="banner-inner wrap-wide admin-header-inner">
+      <div class="admin-brand">
+        <span class="brand-mark brand-mark-sm">
+          <img src="/img/logo-mark.png" alt="社团社徽" width="44" height="44">
+        </span>
+        <div class="admin-brand-text">
+          <h1>审核管理后台</h1>
+          <div class="small admin-brand-sub">示例动漫社 · 入社申请审核系统</div>
+        </div>
+      </div>
+      <div class="who-box">
+        <span class="who-name" id="whoAmI">—</span>
+        <span class="badge badge-super" id="whoRole">—</span>
+      </div>
+      <div class="admin-nav">
+        <button class="btn btn-sm" id="navList" type="button">审核列表</button>
+        <button class="btn btn-sm" id="navAdmins" type="button" style="display:none">管理员账号管理</button>
+        <button class="btn btn-sm" id="navSystem" type="button" style="display:none">系统设置</button>
+        <button class="btn btn-sm" id="navReviewState" type="button" style="display:none">审核设置</button>
+        <button class="btn btn-sm" id="navPwd" type="button">修改密码</button>
+        <button class="btn btn-sm" id="navLogout" type="button">退出登录</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap wrap-wide">
+
+    <!-- ---------- 审核列表页 ---------- -->
+    <section id="viewList">
+      <div class="stats" id="statsBar"></div>
+
+      <div class="notice notice-info small" id="escalatedHint" style="display:none"></div>
+
+      <div class="card">
+        <div class="toolbar">
+          <select id="fDept"><option value="">全部部门</option></select>
+          <select id="fStatus">
+            <option value="">全部状态</option>
+            <option value="submitted">待审核</option>
+            <option value="resubmitted">复审待审核</option>
+            <option value="viewing">审核员查看中</option>
+            <option value="approved">审核通过</option>
+            <option value="rejected">审核不通过</option>
+            <option value="returned">审核员退回</option>
+            <option value="escalated">已移交主审核官</option>
+            <option value="intervened">主审核官介入中</option>
+          </select>
+          <input type="search" id="fQ" placeholder="搜索 CN 代称（模糊）">
+          <button class="btn btn-sm" id="btnRefresh" type="button">刷新</button>
+          <span class="spacer"></span>
+          <label class="small muted" style="display:inline-flex;align-items:center;gap:5px">
+            <input type="checkbox" id="onlyUrged"> 仅显示被催促过的申请
+          </label>
+          <label class="small muted" style="display:inline-flex;align-items:center;gap:5px">
+            <input type="checkbox" id="showQq"> 显示QQ号
+          </label>
+          <label class="small muted" style="display:inline-flex;align-items:center;gap:5px">
+            <input type="checkbox" id="expFiltered"> 仅导出当前筛选结果
+          </label>
+          <button class="btn btn-primary" id="btnExport" type="button">导出Excel</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden">
+        <div class="table-wrap">
+          <table class="grid stack" id="listTable">
+            <thead>
+              <tr>
+                <th>序号</th><th>CN代称</th><th id="thQq" style="display:none">QQ号</th><th>申请部门</th><th>提交时间</th><th>审核状态</th><th>附件</th>
+              </tr>
+            </thead>
+            <tbody id="listBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 申请详情页 ---------- -->
+    <section id="viewDetail" style="display:none">
+      <div class="toolbar" style="margin-bottom:12px">
+        <button class="btn btn-sm" id="btnBack" type="button">← 返回列表</button>
+        <span class="spacer"></span>
+        <span class="muted small" id="detailSeq"></span>
+      </div>
+      <div id="detailBody"></div>
+    </section>
+
+    <!-- ---------- 退回弹窗 ---------- -->
+<div class="modal-mask" id="returnModal">
+  <div class="modal">
+    <div class="modal-head">退回申请 · 填写退回原因</div>
+    <div class="modal-body">
+      <p class="muted small" style="margin:0 0 12px">
+        退回后申请人可修改表单并提交<b>复审</b>。请写清需要补充或修改的内容。
+      </p>
+      <!-- 该申请还剩几次复审机会，由 admin.js 按当前记录动态填充 -->
+      <div class="notice notice-info small" id="returnNotice" style="margin:0 0 12px"></div>
+      <textarea id="returnReason" rows="4" maxlength="500"
+                placeholder="例如：作品图片不足 3 张，请补充后可提交复审"></textarea>
+      <div class="notice notice-warn small" style="margin-top:12px">
+        ⚠️ 审核操作不可逆，提交后不能二次修改，系统将记录退回原因、审核时间与操作人。
+      </div>
+      <div class="q-error" id="returnErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="returnModal">取消</button>
+      <button class="btn btn-primary" type="button" id="returnConfirm">确定退回</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 无法决定 · 提交主审核官 ---------- -->
+<div class="modal-mask" id="escalateModal">
+  <div class="modal">
+    <div class="modal-head">无法决定 · 提交主审核官</div>
+    <div class="modal-body">
+      <div class="notice notice-warn" style="font-size:14.5px;font-weight:600">
+        此将视为您无法决定该申请是否通过，审核表将提交至最高管理员审核
+      </div>
+      <p class="muted small" style="margin:12px 0 0">
+        提交后该申请表<b>不再对普通审核员可见</b>，仅最高权限管理员（超管）可查看和审核。
+      </p>
+      <div class="q-error" id="escalateErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="escalateModal">取消</button>
+      <button class="btn btn-primary" type="button" id="escalateConfirm">确认提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 管理员账号管理页 ---------- -->
+    <section id="viewAdmins" style="display:none">
+      <div class="card">
+        <div class="toolbar">
+          <h2 class="card-title" style="margin:0">管理员账号管理</h2>
+          <span class="spacer"></span>
+          <button class="btn btn-primary btn-sm" id="btnAddAdmin" type="button">＋ 新增管理员账号</button>
+        </div>
+        <div class="notice notice-info small" style="margin-top:12px" id="addAdminHint">
+          最高权限管理员（超管）拥有全部权限，可为子账号 <b>设置备注</b> 与 <b>分配功能权限</b>（点【设置权限】）。<br>
+          新建子账号默认只开启<b>审核权限</b>；系统设置 / 封禁账号 / 主审核官介入 三项权限需在【设置权限】里手动勾选。
+          <b>最高管理员账号不可删除、权限不可修改。</b>
+        </div>
+        <div class="notice notice-warn small" id="permReadonlyHint" style="display:none;margin-top:12px">
+          当前账号拥有<b>封禁账号权限</b>，可以停用 / 解封账号，但<b>不能分配功能权限</b>（仅最高权限管理员可分配）。
+        </div>
+        <div class="table-wrap">
+          <table class="grid stack">
+            <thead>
+              <tr><th>账号名称</th><th>账号权限</th><th>功能权限</th><th>备注</th><th>创建时间</th><th>最近登录</th><th>操作</th></tr>
+            </thead>
+            <tbody id="adminsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 系统设置页（仅最高权限管理员可见） ---------- -->
+    <section id="viewSystem" style="display:none">
+  <div class="card">
+    <div class="toolbar">
+      <h2 class="card-title" style="margin:0">系统设置</h2>
+      <span class="spacer"></span>
+      <button class="btn btn-sm" type="button" id="btnRefreshSystem">刷新状态</button>
+    </div>
+    <div class="notice notice-info small" style="margin-top:12px">
+      本页仅<b>最高权限管理员</b>可见可用。这里的操作只针对<b>服务器系统</b>本身，
+      <b>不会删除或修改任何业务数据</b>（申请表、审核结果、管理员账号、上传的图片与音频都保存在磁盘上）。
+    </div>
+    <div class="detail-grid" id="sysInfo" style="margin-top:14px"></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 class="card-title">重启系统</h2>
+    <p class="muted small" style="margin:6px 0 14px">
+      点击后服务器将重启操作系统，期间网站会有约 1 分钟无法访问，恢复后本页会自动刷新。
+    </p>
+    <div class="notice notice-warn small" style="margin-bottom:14px">
+      ✅ 重启<b>不会</b>删除数据库、申请表、审核结果、管理员账号、上传的图片与音频。<br>
+      ⚠️ 请尽量避开成员正在填写申请表的时段。每日 00:00 还会自动重启一次。
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-danger btn-lg" type="button" id="btnReboot">重启系统</button>
+      <span class="muted small" id="rebootHint"></span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 class="card-title">最近的重启记录</h2>
+    <p class="muted small" style="margin:6px 0 0">后台点击【重启系统】触发的记录（含操作人与来源 IP）。</p>
+    <div class="table-wrap" style="margin-top:10px">
+      <table class="grid stack">
+        <thead>
+          <tr><th>时间</th><th>方式</th><th>操作人</th><th>来源 IP</th><th>说明</th></tr>
+        </thead>
+        <tbody id="rebootLogBody"></tbody>
+      </table>
+    </div>
+
+    <h2 class="card-title" style="margin:22px 0 0">服务器重启日志（含每日 00:00 定时任务）</h2>
+    <p class="muted small" style="margin:6px 0 0">
+      定时任务不经过后台，记录写在服务器 <code id="sysLogPath">/var/log/club-reboot.log</code>，这里直接读最后几行。
+    </p>
+    <pre class="sys-log" id="sysLogTail">加载中…</pre>
+  </div>
+    </section>
+
+    <!-- ---------- 审核设置页（需【系统开启权限】） ---------- -->
+    <section id="viewReviewState" style="display:none">
+      <div class="card">
+        <div class="toolbar">
+          <h2 class="card-title" style="margin:0">审核设置</h2>
+          <span class="spacer"></span>
+          <button class="btn btn-sm" type="button" id="btnRefreshState">刷新状态</button>
+        </div>
+        <div class="notice notice-info small" style="margin-top:12px">
+          这里控制<b>整个审核系统</b>的开关状态，仅拥有<b>【系统开启权限】</b>的账号可以操作。
+          <br>· <b>启动审核系统</b>：申请表正常填写与提交
+          · <b>暂停审核系统</b>：前台弹窗提示暂停原因与预计恢复时间（申请表仍可提交）
+          · <b>终止审核系统</b>：停止新人入社申请（前台弹窗展示通告，且不再接收提交）
+        </div>
+
+        <div class="rstate-current" id="rstateCurrent" data-state="running" style="margin-top:14px">
+          <span class="muted small">当前系统状态</span>
+          <span class="rc-label" id="rstateLabel">审核系统运行中</span>
+          <span class="muted small" id="rstateMeta"></span>
+        </div>
+
+        <div class="rstate-row" style="margin-top:14px">
+          <button class="btn rstate-btn" type="button" id="btnStateStart" data-state="running">▶ 启动审核系统</button>
+          <button class="btn rstate-btn" type="button" id="btnStatePause" data-state="paused">⏸ 暂停审核系统</button>
+          <button class="btn rstate-btn" type="button" id="btnStateStop" data-state="stopped">⛔ 终止审核系统</button>
+        </div>
+        <p class="muted small" style="margin:10px 0 0" id="rstateHint">
+          三个状态互斥：点击后立即生效，前台申请人页面会同步更新。
+        </p>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2 class="card-title">状态变更记录</h2>
+        <p class="muted small" style="margin:6px 0 0">
+          每一次操作（含状态未变化的重复保存）都会留痕，保存在服务器 <code>data/review-state.json</code>。
+        </p>
+        <div class="table-wrap" style="margin-top:10px">
+          <table class="grid stack">
+            <thead>
+              <tr><th>时间</th><th>操作</th><th>变更</th><th>原因 / 通告</th><th>预计恢复</th><th>操作人</th></tr>
+            </thead>
+            <tbody id="rstateHistoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ---------- 重启系统确认弹窗 ---------- -->
+<div class="modal-mask" id="rebootModal">
+  <div class="modal">
+    <div class="modal-head">重启系统</div>
+    <div class="modal-body">
+      <p style="margin:0 0 12px;font-size:15px;font-weight:600">确认要重启服务器系统吗？</p>
+      <div class="notice notice-warn small">
+        ⚠️ 提交后服务器将在约 <b id="rebootDelayText">8</b> 秒后重启，网站约 1 分钟内无法访问，恢复后页面会自动刷新。
+      </div>
+      <div class="notice notice-info small" style="margin-top:10px">
+        ✅ 重启只重启服务器系统，<b>不会删除</b>数据库、申请表、审核结果、管理员账号、上传的图片与音频。
+      </div>
+      <div class="q-error" id="rebootErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="rebootModal">取消</button>
+      <button class="btn btn-danger" type="button" id="rebootConfirm">确定重启</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 重启等待遮罩 ---------- -->
+<div class="reboot-overlay" id="rebootOverlay" data-static="1">
+  <div class="ro-box">
+    <div class="spinner"></div>
+    <h3 class="ro-title" id="roTitle">服务器正在重启…</h3>
+    <p class="ro-text" id="roText">请勿关闭本页面，恢复访问后会自动刷新。</p>
+    <p class="ro-sub" id="roSub">已等待 0 秒</p>
+  </div>
+</div>
+
+<!-- ---------- 审核通过弹窗 ---------- -->
+<div class="modal-mask" id="approveModal">
+  <div class="modal">
+    <div class="modal-head">审核通过 · 推荐分配部门</div>
+    <div class="modal-body">
+      <p class="muted small" style="margin:0 0 12px">请选择推荐该申请人进入的部门，确认后即完成审核。</p>
+      <select id="approveDept"></select>
+      <div class="notice notice-warn small" style="margin-top:12px">
+        ⚠️ 审核操作不可逆，提交后不能二次修改审核结果，系统将自动记录审核时间与操作的审核员。
+      </div>
+      <div class="q-error" id="approveErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="approveModal">取消</button>
+      <button class="btn btn-ok" type="button" id="approveConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 审核不通过弹窗 ---------- -->
+<div class="modal-mask" id="rejectModal">
+  <div class="modal">
+    <div class="modal-head">审核不通过 · 选择拒绝理由</div>
+    <div class="modal-body">
+      <div class="radios" id="rejectReasons" style="flex-direction:column;align-items:stretch"></div>
+      <div id="rejectOtherWrap" style="display:none;margin-top:12px">
+        <textarea id="rejectOtherText" rows="3" maxlength="500" placeholder="请填写自定义拒绝原因（必填）"></textarea>
+      </div>
+      <div class="notice notice-warn small" style="margin-top:12px">
+        ⚠️ 审核操作不可逆，提交后不能二次修改审核结果，系统将自动记录拒绝理由、审核时间与操作的审核员。
+      </div>
+      <div class="q-error" id="rejectErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="rejectModal">取消</button>
+      <button class="btn btn-danger" type="button" id="rejectConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 新增管理员弹窗 ---------- -->
+<div class="modal-mask" id="addAdminModal">
+  <div class="modal">
+    <div class="modal-head">新增管理员账号</div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="newUsername">账号名称 <span style="color:#e0484d">*</span></label>
+        <input type="text" id="newUsername" maxlength="30" placeholder="2-30 位字母／数字／汉字">
+      </div>
+      <div class="field">
+        <label for="newPassword">登录密码 <span style="color:#e0484d">*</span></label>
+        <input type="text" id="newPassword" maxlength="50" placeholder="至少 6 位">
+      </div>
+      <div class="field">
+        <label for="newNote">备注（可选）</label>
+        <input type="text" id="newNote" maxlength="100" placeholder="例如：负责 COS 部审核">
+      </div>
+      <div class="notice notice-info small">新账号默认开启<b>审核权限</b>；其余权限（系统设置 / 封禁账号 / 主审核官介入）请在账号列表里点【设置权限】分配。</div>
+      <div class="q-error" id="addAdminErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="addAdminModal">取消</button>
+      <button class="btn btn-primary" type="button" id="addAdminConfirm">确定新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 修改密码弹窗（超管与普通审核账号均可使用） ---------- -->
+<div class="modal-mask" id="pwdModal">
+  <div class="modal">
+    <div class="modal-head">修改我的登录密码</div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="oldPassword">旧密码 <span style="color:#e0484d">*</span></label>
+        <input type="password" id="oldPassword" maxlength="200" autocomplete="current-password" placeholder="请输入当前使用的密码">
+      </div>
+      <div class="field">
+        <label for="newPassword2">新密码 <span style="color:#e0484d">*</span></label>
+        <input type="password" id="newPassword2" maxlength="200" autocomplete="new-password" placeholder="至少 6 位">
+      </div>
+      <div class="field">
+        <label for="confirmPassword">确认新密码 <span style="color:#e0484d">*</span></label>
+        <input type="password" id="confirmPassword" maxlength="200" autocomplete="new-password" placeholder="请再次输入新密码">
+      </div>
+      <div class="q-error" id="pwdErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="pwdModal">取消</button>
+      <button class="btn btn-primary" type="button" id="pwdConfirm">确定修改</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 设置子账号备注弹窗（超管独有） ---------- -->
+<div class="modal-mask" id="noteModal">
+  <div class="modal">
+    <div class="modal-head">设置子账号备注</div>
+    <div class="modal-body">
+      <p class="muted small" style="margin:0 0 12px">
+        子账号登录后台后，右上角会显示这里的备注名称（例如「COS部长」）而不是原始账号名。
+      </p>
+      <div class="field">
+        <label for="noteInput">备注名称</label>
+        <input type="text" id="noteInput" maxlength="100" placeholder="例如：COS部长（留空则显示原始账号名）">
+      </div>
+      <div class="q-hint" id="noteWho"></div>
+      <div class="q-error" id="noteErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="noteModal">取消</button>
+      <button class="btn btn-primary" type="button" id="noteConfirm">保存备注</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 审核设置：暂停审核系统 ---------- -->
+<div class="modal-mask" id="pauseSysModal">
+  <div class="modal">
+    <div class="modal-head">暂停审核系统</div>
+    <div class="modal-body">
+      <p class="muted small" style="margin:0 0 12px">
+        暂停后，申请人打开填表页会自动弹出提示（暂停时间 / 暂停原因 / 预计恢复时间），页面顶部显示警戒线。
+      </p>
+      <div class="field">
+        <label for="pauseReason">暂停原因 <span style="color:#e0484d">*</span></label>
+        <input type="text" id="pauseReason" maxlength="300" placeholder="例如：期末周暂停审核，考试结束后恢复">
+      </div>
+      <div class="field">
+        <label for="pauseUntil">预计恢复时间 <span style="color:#e0484d">*</span></label>
+        <input type="datetime-local" id="pauseUntil">
+        <div class="q-hint" id="pauseUntilHint">必须晚于当前时间（东八区）</div>
+      </div>
+      <div class="q-error" id="pauseSysErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="pauseSysModal">取消</button>
+      <button class="btn btn-warn" type="button" id="pauseSysConfirm">确定暂停</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 审核设置：终止审核系统 ---------- -->
+<div class="modal-mask" id="stopSysModal">
+  <div class="modal">
+    <div class="modal-head">终止审核系统</div>
+    <div class="modal-body">
+      <p class="muted small" style="margin:0 0 12px">
+        终止后<b>停止接收新人入社申请</b>：申请人填表页会弹出公告弹窗、顶部显示红色警戒线，且提交按钮不可用。
+      </p>
+      <div class="field">
+        <label for="stopNotice">管理员通告文本 <span style="color:#e0484d">*</span></label>
+        <textarea id="stopNotice" rows="4" maxlength="1000"
+                  placeholder="例如：本轮招新已结束，感谢大家的关注，下一次招新时间请留意群公告。"></textarea>
+      </div>
+      <div class="notice notice-warn small">
+        前台弹窗标题固定为：<b>示例动漫社团暂时停止新人入社申请</b>，内容即上面填写的通告。
+      </div>
+      <div class="q-error" id="stopSysErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="stopSysModal">取消</button>
+      <button class="btn btn-danger" type="button" id="stopSysConfirm">确定终止</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 通用确认弹窗 ---------- -->
+<div class="modal-mask" id="confirmModal" data-static="1">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head" id="confirmTitle">确认操作</div>
+    <div class="modal-body" id="confirmText"></div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="confirmModal">取消</button>
+      <button class="btn btn-danger" type="button" id="confirmOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 设置权限弹窗（超管；或具封禁权限的账号只改停用） ---------- -->
+<div class="modal-mask" id="banModal">
+  <div class="modal">
+    <div class="modal-head">设置权限</div>
+    <div class="modal-body">
+      <div class="q-hint" id="banWho" style="margin-bottom:14px"></div>
+
+      <!-- 权限分配（仅超管可见可改） -->
+      <div id="permBox">
+        <div class="perm-title">功能权限分配</div>
+        <label class="perm-item">
+          <input type="checkbox" id="permReview">
+          <span>
+            <b>审核权限</b>
+            <span class="small muted">可查看申请表并执行 审核通过 / 审核不通过 / 退回 / 移交主审核官（新建子账号默认开启）</span>
+          </span>
+        </label>
+        <label class="perm-item">
+          <input type="checkbox" id="permSystem">
+          <span>
+            <b>系统设置权限</b>
+            <span class="small muted">可进入【系统设置】页（查看服务器状态、重启服务器）</span>
+          </span>
+        </label>
+        <label class="perm-item">
+          <input type="checkbox" id="permBan">
+          <span>
+            <b>封禁账号权限</b>
+            <span class="small muted">可在账号管理页停用 / 解封其他管理员账号</span>
+          </span>
+        </label>
+        <label class="perm-item">
+          <input type="checkbox" id="permIntervene">
+          <span>
+            <b>主审核官介入权限</b>
+            <span class="small muted">可执行【审核介入】并审核被介入锁定的申请表（不勾选则看不到该按钮）</span>
+          </span>
+        </label>
+        <div class="notice notice-info small" style="margin:10px 0 4px">
+          各权限相互独立，按需勾选；不勾选则该账号看不到对应菜单 / 按钮。
+        </div>
+      </div>
+
+      <div class="perm-title" style="margin-top:16px">账号停用 / 解封</div>
+      <!-- ① 开关：启用停用 -->
+      <div class="switch-row">
+        <div>
+          <div class="switch-title">启用停用</div>
+          <div class="small muted" id="banSwitchHint">开关打开代表开启账号封禁</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="banEnabled">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div id="banFields">
+        <!-- ② 日期选择器 -->
+        <div class="field">
+          <label for="banUntil">解封日期（日历选择未来的日期） <span style="color:#e0484d">*</span></label>
+          <input type="date" id="banUntil">
+          <div class="q-hint" id="banDuration">请选择解封日期</div>
+        </div>
+        <!-- ③ 封禁理由 -->
+        <div class="field">
+          <label for="banReason">封禁理由 <span style="color:#e0484d">*</span></label>
+          <input type="text" id="banReason" maxlength="200" placeholder="例如：多次未参与社团活动 / 违反社团管理规定">
+        </div>
+      </div>
+
+      <div class="q-error" id="banErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="banModal">取消</button>
+      <button class="btn btn-primary" type="button" id="banConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 审核介入确认弹窗（仅具介入权限的账号） ---------- -->
+<div class="modal-mask" id="interveneModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">审核介入</div>
+    <div class="modal-body">
+      <p style="margin:0 0 12px;font-size:15px;font-weight:600">确认要对该申请表执行【审核介入】吗？</p>
+      <div class="notice notice-warn small">
+        ⚠️ 介入后将<b>清空该申请表已有的审核状态</b>（当前状态：<b id="interveneFrom">—</b>），
+        状态固定为「<b>主审核官介入中</b>」。<br>
+        此后该申请表<b>只能由主审核官操作</b>，其他审核员打开后所有审核按钮会置灰。
+      </div>
+      <div class="notice notice-info small" style="margin-top:10px">
+        主审核官完成一次审核（审核通过 / 审核不通过 / 退回）后，状态更新为对应结果，<b>锁定自动解除</b>。
+      </div>
+      <div class="q-error" id="interveneErr" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" type="button" data-close="interveneModal">取消</button>
+      <button class="btn btn-intervene" type="button" id="interveneConfirm">确定介入</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 登录被拒：账号已停用提示 ---------- -->
+<div class="modal-mask" id="banNoticeModal" data-static="1">
+  <div class="modal">
+    <div class="modal-head">账号已被停用</div>
+    <div class="modal-body">
+      <div class="notice notice-err" style="font-size:14.5px;font-weight:600">
+        您的账户已被示例动漫社停用
+      </div>
+      <div class="detail-item">
+        <span class="k">停用开始时间</span><span class="v" id="bnStart">—</span>
+      </div>
+      <div class="detail-item">
+        <span class="k">解封时间</span><span class="v" id="bnUntil">—</span>
+      </div>
+      <div class="detail-item">
+        <span class="k">封禁原因</span><span class="v sr-reason" id="bnReason">—</span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-primary" type="button" id="bnOk">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- 图片放大 ---------- -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" type="button">关闭 ✕</button>
+  <button class="lb-nav lb-prev" type="button">‹</button>
+  <button class="lb-nav lb-next" type="button">›</button>
+  <img id="lightboxImg" alt="作品预览">
+  <div class="lb-cap" id="lightboxCap"></div>
+</div>
+
+<script src="/js/common.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# 示例动漫社 · 入社申请审核系统
+# 每日 00:00（服务器时区 = Asia/Shanghai，东八区）自动重启服务器系统。
+#
+# 说明：
+#   · 只重启操作系统，不会删除申请表 / 审核结果 / 管理员账号 / 上传的图片与音频；
+#   · 应用（systemd 服务 club-apply，enabled + Restart=always）与 nginx 都会随系统自动拉起；
+#   · 重启经历记录写在 /var/log/club-reboot.log，后台【系统设置】页也会展示。
+#
+# 临时停用：把下面这行注释掉即可（或整份文件改名为 club-reboot.disabled）。
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=""
+0 0 * * * root /usr/local/bin/club-reboot.sh scheduled cron
