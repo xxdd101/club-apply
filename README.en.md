@@ -4,6 +4,7 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen.svg)](https://nodejs.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-2-success.svg)](#)
 [![Build](https://img.shields.io/badge/build-none-lightgrey.svg)](#)
+[![Stars](https://img.shields.io/github/stars/xxdd101/club-apply?style=social)](https://github.com/xxdd101/club-apply/stargazers)
 
 [简体中文](README.md) | **English**
 
@@ -12,6 +13,9 @@ reviewers approve / reject / send back, and applicants can check their own statu
 
 Built with plain Node.js and vanilla front-end code — **no build step, no database**
 (state lives in JSON files), so it runs anywhere Node runs.
+
+> ⭐ **If this project saves you some time, a star would be appreciated** — it helps others
+> find the project and tells the author it is worth maintaining.
 
 > This is a **template**. The club name "示例动漫社", the placeholder logo and the sample
 > departments are all placeholders — see [Customization](#customization) to make it yours.

@@ -6,6 +6,7 @@
 [![Dependencies](https://img.shields.io/badge/dependencies-2-success.svg)](#)
 [![Build](https://img.shields.io/badge/build-none-lightgrey.svg)](#)
 [![Database](https://img.shields.io/badge/database-JSON%20files-orange.svg)](#)
+[![Stars](https://img.shields.io/github/stars/xxdd101/club-apply?style=social)](https://github.com/xxdd101/club-apply/stargazers)
 
 [简体中文](README.md) | [English](README.en.md)
 
@@ -13,6 +14,9 @@
 
 纯 Node.js + 原生前端，**零构建、零数据库**（JSON 文件持久化，重启也不丢数据），
 一条命令就能在本机跑起来，也能直接部署到云服务器长期使用。
+
+> ⭐ **如果这个项目对你有帮助，欢迎点个 Star** —— 这是让更多人发现它最直接的方式，
+> 也能让作者知道有人在用、值得继续维护。右上角 `Star` 按钮，一秒的事 🙏
 
 > 👉 **不想看代码？直接看 [使用说明 USAGE.md](USAGE.md)** —— 面向使用者的手册：怎么跑起来、怎么改字段、怎么审核、怎么备份。
 
