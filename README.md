@@ -1,6 +1,7 @@
 # 申请审核系统（Club Apply）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/xxdd101/club-apply/actions/workflows/ci.yml/badge.svg)](https://github.com/xxdd101/club-apply/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen.svg)](https://nodejs.org/)
 [![Dependencies](https://img.shields.io/badge/dependencies-2-success.svg)](#)
 [![Build](https://img.shields.io/badge/build-none-lightgrey.svg)](#)

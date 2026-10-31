@@ -1,6 +1,6 @@
 {
   "name": "club-apply",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "通用申请审核系统：在线填表 + 附件上传 + 多人审核 + 状态查询（字段由 config/form.json 配置）",
   "main": "server.js",
   "scripts": {
