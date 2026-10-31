@@ -1,5 +1,11 @@
 # 申请审核系统（Club Apply）
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen.svg)](https://nodejs.org/)
+[![Dependencies](https://img.shields.io/badge/dependencies-2-success.svg)](#)
+[![Build](https://img.shields.io/badge/build-none-lightgrey.svg)](#)
+[![Database](https://img.shields.io/badge/database-JSON%20files-orange.svg)](#)
+
 一套开箱即用的**通用「申请表 + 审核流」系统**：**在线填表 → 附件上传 → 多人审核 → 状态自助查询**。
 
 纯 Node.js + 原生前端，**零构建、零数据库**（JSON 文件持久化，重启也不丢数据），
