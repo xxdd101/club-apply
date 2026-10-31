@@ -1,0 +1,33 @@
+{
+  "title": "入社申请表",
+  "intro": "共 {{FIELD_COUNT}} 题。带 * 为必填项，部分题目会根据您的选择自动出现（默认隐藏）。",
+  "fields": [
+    {"no": "01", "id": "cn", "adminLabel": "CN 代称", "type": "text", "label": "您的CN或代称？", "note": "［二次元代称］", "required": true, "maxLength": 50, "placeholder": "请填写CN"},
+    {"no": "01附", "id": "qq", "adminLabel": "QQ 号", "type": "text", "label": "请填写QQ号", "required": true, "maxLength": 12, "inputmode": "numeric", "autocomplete": "off", "placeholder": "请输入 5-11 位数字QQ号", "nestUnder": "cn", "nestComment": "新增：QQ号（在代称下方，独立一行）"},
+    {"no": "02", "id": "age", "adminLabel": "真实年龄", "type": "number", "label": "请填写您的真实年龄", "required": true, "min": 1, "max": 120, "step": 1, "unit": "岁", "placeholder": "请输入真实年龄"},
+    {"no": "03", "id": "joinYears", "adminLabel": "入圈年龄", "type": "text", "label": "您的入圈年龄", "note": "（入圈到至今多长时间，请写明年份，例如：1年；1月）", "required": true, "maxLength": 50, "placeholder": "例如：1年；1月"},
+    {"no": "04", "id": "province", "adminLabel": "所在地", "type": "region", "label": "所在地", "note": "（定位只限制于省份地市哦）", "required": true},
+    {"no": "05", "id": "gender", "adminLabel": "性别", "type": "radio", "label": "请选择性别", "required": true, "optionsFrom": "genders"},
+    {"no": "06", "id": "height", "adminLabel": "身高", "type": "number", "label": "请填写身高", "required": true, "min": 50, "max": 250, "step": 1, "unit": "厘米", "placeholder": "请输入身高"},
+    {"no": "07", "id": "hobbies", "adminLabel": "日常兴趣或特长", "type": "textarea", "label": "请填写您的日常兴趣或特长", "required": true, "maxLength": 1000, "rows": 3, "placeholder": "例如：绘画、唱歌、摄影、动手改娃、写文等"},
+    {"no": "08", "id": "hasExperience", "adminLabel": "是否有相关经验", "type": "radio", "label": "您是否有相关经验", "note": "（cos经验或社会经验）", "required": true, "options": ["有", "无"]},
+    {"no": "09", "id": "experienceDesc", "adminLabel": "相关经验简述", "type": "textarea", "label": "请简述您的相关经验", "required": true, "maxLength": 2000, "rows": 3, "placeholder": "例如：参加过的展会、社团活动、舞台演出、工作经历等", "showIf": {"field": "hasExperience", "in": ["有"]}},
+    {"no": "10", "id": "favoriteWorks", "adminLabel": "喜欢／保有兴趣的二次元动漫·人物·游戏", "type": "textarea", "label": "请填写喜欢，或保有兴趣的二次元动漫/人物/游戏", "note": "（举例即可）", "required": true, "maxLength": 2000, "rows": 3, "placeholder": "例如：《原神》《明日方舟》《咒术回战》…"},
+    {"no": "11", "id": "otherClub", "adminLabel": "是否参加其他社会性质动漫社团", "type": "radio", "label": "您现在是否参加其他社会性质动漫社团", "note": "（学校内动漫社团不视为参加其他社团，选择“否”即可）", "required": true, "options": ["是", "否"]},
+    {"no": "12", "id": "otherClubName", "adminLabel": "其他社会性质社团名称", "type": "text", "label": "您参加其他社会性质动漫社团的社团名称是", "required": true, "maxLength": 100, "placeholder": "请填写社团全称", "showIf": {"field": "otherClub", "in": ["是"]}},
+    {"no": "13", "id": "department", "adminLabel": "申请部门", "type": "choice-grid", "label": "请选择您想要加入的部门", "note": "（部分部门需要提供作品，选择后自动显示提交方式）", "required": true, "optionsFrom": "departments"},
+    {"no": "14", "id": "workImages", "type": "images", "label": "选择COS部请提交一定的个人作品", "note": "（包括但不限于COS正片，气美场照等）", "required": true, "max": 6, "uploader": "image", "hint": "支持 jpg / png，最多 6 张，单张 ≤10MB", "pickLabel": "＋ 选择图片", "showIf": {"field": "department", "in": ["COS部"]}},
+    {"no": "15", "id": "workImages", "type": "images", "label": "选择三坑部请提供一定个人佐证照片", "note": "（包括但不限于衣物特有照片或个人穿戴/装饰照片等）", "required": true, "max": 6, "uploader": "image", "hint": "支持 jpg / png，最多 6 张，单张 ≤10MB", "pickLabel": "＋ 选择图片", "showIf": {"field": "department", "in": ["三坑部"]}},
+    {"no": "16", "id": "workImages", "type": "images", "label": "选择摄影部/后期部需要提交您的拍摄/后期的作品", "note": "（作品仅用于审核需要）", "required": true, "max": 6, "uploader": "image", "hint": "支持 jpg / png，最多 6 张，单张 ≤10MB", "pickLabel": "＋ 选择图片", "comment": "16 条件题（摄影部 / 后期部共用）", "showIf": {"field": "department", "in": ["摄影部", "后期部"]}},
+    {"no": "17", "id": "workImages", "type": "images", "label": "选择绘画部，需要提供您的绘画作品", "note": "（包括但不限于线稿，电子稿，素描等）", "required": true, "max": 6, "uploader": "image", "hint": "支持 jpg / png，最多 6 张，单张 ≤10MB", "pickLabel": "＋ 选择图片", "showIf": {"field": "department", "in": ["绘画部"]}},
+    {"no": "18", "id": "workAudio", "type": "audio", "label": "选择CV部需要提供一定个人配音/录音文件", "note": "（文件时长大于15秒）", "required": true, "max": 1, "uploader": "audio", "hint": "支持 mp3 / wav，时长 ≥15 秒，单个 ≤30MB", "pickLabel": "＋ 选择录音文件", "showIf": {"field": "department", "in": ["CV部"]}},
+    {"no": "19", "id": "workImages", "type": "images", "label": "选择特摄部需提供作品个人特摄作品或相关自身拍摄的作品展示", "required": true, "max": 6, "uploader": "image", "hint": "支持 jpg / png，最多 6 张，单张 ≤10MB", "pickLabel": "＋ 选择图片", "showIf": {"field": "department", "in": ["特摄部"]}},
+    {"no": "20", "id": "workImages", "type": "images", "label": "选择FURRY（福瑞）部需要提供老师的穿戴作品", "note": "（至少半身展示图）", "required": true, "max": 6, "uploader": "image", "hint": "支持 jpg / png，最多 6 张，单张 ≤10MB；请至少提供半身展示图", "pickLabel": "＋ 选择图片", "showIf": {"field": "department", "in": ["FURRY（福瑞）部"]}},
+    {"no": "21", "id": "workImages", "type": "images", "label": "选择Kigurumi(人偶扮演)部需要提供老师的穿戴作品", "note": "（至少半身展示）", "required": true, "max": 6, "uploader": "image", "hint": "支持 jpg / png，最多 6 张，单张 ≤10MB；请至少提供半身展示", "pickLabel": "＋ 选择图片", "showIf": {"field": "department", "in": ["Kigurumi(人偶扮演)部"]}},
+    {"no": "22", "id": "introduction", "adminLabel": "自我介绍", "type": "textarea", "label": "欢迎加入示例动漫社，做个自我介绍吧！", "required": true, "maxLength": 3000, "rows": 4, "placeholder": "让大家认识一下你～"},
+    {"no": "23", "id": "viewOn2D", "adminLabel": "对二次元的看法", "type": "textarea", "label": "您对于二次元的看法是什么，或者说二次元对您来说是如何的存在", "note": "（两个问题回答其中之一即可）", "required": true, "maxLength": 3000, "rows": 4, "placeholder": "说说你的想法"},
+    {"no": "24", "id": "agreeRules", "adminLabel": "能否遵守并理解管理规章制度", "type": "radio", "label": "您提交本申请即同意加入本社，您是否能遵守并理解示例动漫社管理规章制度", "required": true, "options": ["是", "否"]},
+    {"no": "25", "id": "referralCode", "adminLabel": "内推码", "type": "text", "label": "［非必填］社团内推码", "note": "（拥有内推码的申请将会被系统优先审核）", "required": false, "optionalTag": "选填", "maxLength": 100, "placeholder": "如无可留空", "noError": true},
+    {"no": "26", "id": "inviterCn", "adminLabel": "邀请人 CN", "type": "text", "label": "［非必填］是否来源于本社人员邀请，如果是可以留下他/她的CN", "required": false, "optionalTag": "选填", "maxLength": 100, "placeholder": "邀请人 CN，如无可留空", "noError": true}
+  ]
+}

@@ -4,7 +4,9 @@ pnpm-lock.yaml
 
 # 运行数据（申请记录 / 上传附件 / 密钥，切勿提交）
 data/
-data-test/
+data-*/
+data-verify/
+data-seed/
 
 # 测试与调试产物
 tools/_probe/

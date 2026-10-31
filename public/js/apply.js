@@ -30,9 +30,31 @@
       'Kigurumi(人偶扮演)部': { q: 21, kind: 'image', max: 6 }
     },
     maxImages: 6,
-    minAudioSeconds: 15
+    minAudioSeconds: 15,
+    /* 题目字段表（config/form.json），接口没拿到时为空：页面仍按静态题目工作 */
+    form: []
   };
-  const WORK_QIDS = ['q14', 'q15', 'q16', 'q17', 'q18', 'q19', 'q20', 'q21'];
+
+  /**
+   * 原有 26 题的字段 id：这些字段由下面硬编码的逻辑收集 / 校验（文案不能变）。
+   * 配置里**新增**的字段走通用逻辑（collect / validate / 草稿 / 复审回填）。
+   */
+  const CORE_FIELD_IDS = [
+    'cn', 'qq', 'age', 'joinYears', 'province', 'city', 'gender', 'height', 'hobbies',
+    'hasExperience', 'experienceDesc', 'favoriteWorks', 'otherClub', 'otherClubName',
+    'department', 'workImages', 'workAudio', 'introduction', 'viewOn2D', 'agreeRules',
+    'referralCode', 'inviterCn'
+  ];
+
+  /** 配置里的字段表（可能是空数组） */
+  function formFields() {
+    return Array.isArray(META.form) ? META.form : [];
+  }
+  /** 配置里新增的字段（原有 26 题除外） */
+  function genericFields() {
+    return formFields().filter(f => f && f.id && CORE_FIELD_IDS.indexOf(f.id) < 0);
+  }
+  function isCoreField(id) { return CORE_FIELD_IDS.indexOf(id) >= 0; }
 
   /* =====================================================================
    * 上传组件
@@ -218,21 +240,38 @@
     return r ? r.value : '';
   }
 
+  function radioValue(name) {
+    const r = $(`input[name="${name}"]:checked`);
+    return r ? r.value : '';
+  }
+
+  /**
+   * 条件题是否满足显示条件（完全由服务端生成的 data-cond / data-dept 驱动）：
+   *   data-cond="hasExperience=有"          → 该字段当前选中值在列表里
+   *   data-dept="摄影部,后期部"              → 当前所选部门在列表里
+   */
+  function condShown(el) {
+    const cond = el.dataset.cond;
+    if (cond) {
+      const i = cond.indexOf('=');
+      if (i < 0) return false;
+      const field = cond.slice(0, i);
+      const vals = cond.slice(i + 1).split(',').map(s => s.trim());
+      return vals.includes(radioValue(field));
+    }
+    const dept = el.dataset.dept;
+    if (dept) {
+      const cur = currentDept();
+      return !!cur && dept.split(',').map(s => s.trim()).includes(cur);
+    }
+    return false;
+  }
+
   function refreshConditional() {
-    const hasExp = ($('input[name="hasExperience"]:checked') || {}).value || '';
-    const otherClub = ($('input[name="otherClub"]:checked') || {}).value || '';
-    show('q09', hasExp === '有');
-    show('q12', otherClub === '是');
+    $$('.q.cond').forEach(el => show(el.id, condShown(el)));
 
     const dept = currentDept();
     const rule = META.workRules[dept];
-    WORK_QIDS.forEach(qid => {
-      const el = $('#' + qid);
-      if (!el) return;
-      const belongs = (el.dataset.dept || '').split(',').map(s => s.trim());
-      show(qid, !!rule && belongs.includes(dept));
-    });
-
     const hint = $('#deptHint');
     if (hint) {
       if (!dept) { hint.textContent = ''; hint.className = 'q-hint'; }
@@ -260,12 +299,27 @@
     }) || null;
   }
 
+  /** 按字段类型取一个「配置里新增」字段的值 */
+  function genericValue(f) {
+    if (f.type === 'images') {
+      const box = visibleUploader(f.id);
+      return box ? box._files.map(x => x.url) : [];
+    }
+    if (f.type === 'audio') {
+      const box = visibleUploader(f.id);
+      return box && box._files[0] ? box._files[0].url : '';
+    }
+    if (f.type === 'radio' || f.type === 'choice-grid') return radioValue(f.id);
+    const el = $('#' + f.id);
+    return el ? String(el.value || '').trim() : '';
+  }
+
   function collect() {
     const val = id => { const el = $('#' + id); return el ? el.value.trim() : ''; };
     const radio = name => { const r = $(`input[name="${name}"]:checked`); return r ? r.value : ''; };
     const imgBox = visibleUploader('workImages');
     const audBox = visibleUploader('workAudio');
-    return {
+    const out = {
       cn: val('cn'),
       qq: val('qq'),
       age: val('age'),
@@ -289,6 +343,12 @@
       referralCode: val('referralCode'),
       inviterCn: val('inviterCn')
     };
+    /* 配置里新增的字段：按 id 泛化收集（已有同名字段不覆盖） */
+    genericFields().forEach(f => {
+      if (Object.prototype.hasOwnProperty.call(out, f.id)) return;
+      out[f.id] = genericValue(f);
+    });
+    return out;
   }
 
   function uploaderSnapshot() {
@@ -326,11 +386,46 @@
     const e = $('#qqError');
     if (e) e.textContent = msg;
   }
+  /* 其它嵌套子字段：错误显示在子字段自己的 .q-error 上 */
+  function markNestedInvalid(qid, fieldId, msg) {
+    const el = $('#' + qid);
+    if (el) el.classList.add('invalid');
+    const e = $('#' + fieldId + 'Error');
+    if (e) e.textContent = msg;
+  }
   function clearInvalid() {
     $$('.q.invalid').forEach(el => {
       el.classList.remove('invalid');
       $$('.q-error', el).forEach(e => { e.textContent = ''; });
     });
+  }
+
+  /** 配置里新增字段的通用校验（与 lib/form-config.js validateExtras 规则一致） */
+  function genericError(f, v) {
+    const isChoice = f.type === 'radio' || f.type === 'choice-grid';
+    const empty = Array.isArray(v)
+      ? v.length === 0
+      : String(v === undefined || v === null ? '' : v).trim() === '';
+    if (empty) return f.required ? `${isChoice ? '请选择' : '请填写'}${f.label}` : '';
+    if (Array.isArray(v)) {
+      const max = Number(f.max || 0);
+      return max && v.length > max ? `${f.label}最多上传 ${max} 个文件` : '';
+    }
+    const s = String(v);
+    if (f.pattern) {
+      let re = null;
+      try { re = new RegExp(f.pattern); } catch (e) { re = null; }
+      if (re && !re.test(s)) return f.patternError || `${f.label}格式不正确`;
+    }
+    if (f.type === 'number') {
+      const n = +s;
+      if (isNaN(n)) return `${f.label}请填写数字`;
+      if (f.min !== undefined && n < f.min) return `${f.label}不能小于 ${f.min}`;
+      if (f.max !== undefined && n > f.max) return `${f.label}不能大于 ${f.max}`;
+    }
+    if (f.maxLength && s.length > f.maxLength) return `${f.label}不能超过 ${f.maxLength} 个字符`;
+    if (Array.isArray(f.options) && !f.options.includes(s)) return `${f.label}请选择有效选项`;
+    return '';
   }
 
   function validate() {
@@ -374,7 +469,20 @@
     if (!d.viewOn2D) errs.push(['q23', '请填写您对二次元的看法']);
     if (!d.agreeRules) errs.push(['q24', '请选择是否能遵守并理解管理规章制度']);
 
-    errs.forEach(([qid, msg, target]) => (target === 'qq' ? markQqInvalid(msg) : markInvalid(qid, msg)));
+    /* 配置里新增的字段：通用校验（错误显示在该题自己的 .q-error 上） */
+    genericFields().forEach(f => {
+      const msg = genericError(f, d[f.id]);
+      if (!msg) return;
+      const parent = f.nestUnder ? formFields().find(x => x.id === f.nestUnder) : null;
+      const qid = 'q' + (f.nestUnder ? (parent ? parent.no : f.no) : f.no);
+      errs.push([qid, msg, f.nestUnder ? f.id : null]);
+    });
+
+    errs.forEach(([qid, msg, target]) => {
+      if (target === 'qq') markQqInvalid(msg);
+      else if (target) markNestedInvalid(qid, target, msg);
+      else markInvalid(qid, msg);
+    });
     return { data: d, errors: errs };
   }
 
@@ -391,6 +499,12 @@
       !rule || (rule.kind === 'image' ? d.workImages.length > 0 : !!d.workAudio),
       !!d.introduction, !!d.viewOn2D, !!d.agreeRules
     ];
+    /* 配置里新增的必填字段也计入进度 */
+    genericFields().forEach(f => {
+      if (!f.required) return;
+      const v = d[f.id];
+      req.push(Array.isArray(v) ? v.length > 0 : !!String(v === undefined || v === null ? '' : v).trim());
+    });
     let done = 0;
     req.forEach(v => { if (v) done++; });
     el.textContent = `已填写 ${done} / ${req.length} 项必填`;
@@ -410,7 +524,12 @@
     if (submittedFlag) return;
     try {
       const d = collect();
-      if (!d.cn && !d.hobbies && !d.introduction && !d.department) return;   // 基本为空不保存
+      /* 基本为空不保存（配置里新增的字段有内容也保存） */
+      const anyGeneric = genericFields().some(f => {
+        const v = d[f.id];
+        return Array.isArray(v) ? v.length > 0 : !!String(v === undefined || v === null ? '' : v).trim();
+      });
+      if (!d.cn && !d.hobbies && !d.introduction && !d.department && !anyGeneric) return;
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
         at: Date.now(), data: d, uploaders: uploaderSnapshot()
       }));
@@ -455,6 +574,7 @@
     });
 
     refreshConditional();
+    fillGenericFields(d);          // 配置里新增的字段
     applyUploaderSnapshot(draft.uploaders);
     updateFillState();
     return true;
@@ -476,6 +596,28 @@
   function fileNameOf(url) {
     try { return decodeURIComponent(String(url).split('?')[0].split('/').pop() || '已有附件'); }
     catch (e) { return '已有附件'; }
+  }
+
+  /** 回填配置里新增的字段（草稿恢复 / 复审编辑共用） */
+  function fillGenericFields(data) {
+    genericFields().forEach(f => {
+      const v = data ? data[f.id] : undefined;
+      if (v === undefined || v === null) return;
+      if (f.type === 'radio' || f.type === 'choice-grid') {
+        if (!v) return;
+        const r = $$(`input[name="${f.id}"]`).find(x => x.value === String(v));
+        if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+      } else if (f.type === 'images') {
+        if (Array.isArray(v) && v.length) {
+          setUploaderFiles(f.id, v.map(u => ({ url: u, name: fileNameOf(u), size: 0 })));
+        }
+      } else if (f.type === 'audio') {
+        if (v) setUploaderFiles(f.id, [{ url: v, name: fileNameOf(v), size: 0, duration: null }]);
+      } else {
+        const el = $('#' + f.id);
+        if (el) el.value = String(v);
+      }
+    });
   }
 
   /** 用一条已有申请的数据回填整个表单 */
@@ -505,6 +647,7 @@
     setRadio('agreeRules', a.agreeRules);
     setRadio('department', a.department);      // 必须先定部门，作品题才会显示
     refreshConditional();
+    fillGenericFields(a);                      // 配置里新增的字段
     $$('input[type="radio"]:checked').forEach(r => {
       const lb = r.closest('label');
       if (lb) lb.classList.add('checked');
@@ -550,12 +693,17 @@
   function renderRadios() {
     const g = $('#genderGroup');
     if (g) {
-      g.innerHTML = META.genders.map(x =>
+      /* 配置里写死 options 时用配置的选项；optionsFrom 则用内置列表 */
+      const gf = formFields().find(f => f.id === 'gender');
+      const genders = gf && Array.isArray(gf.options) ? gf.options : META.genders;
+      g.innerHTML = genders.map(x =>
         `<label><input type="radio" name="gender" value="${esc(x)}">${esc(x)}</label>`).join('');
     }
     const dp = $('#departmentGroup');
     if (dp) {
-      dp.innerHTML = META.departments.map(x => {
+      const df = formFields().find(f => f.id === 'department');
+      const depts = df && Array.isArray(df.options) ? df.options : META.departments;
+      dp.innerHTML = depts.map(x => {
         const rule = META.workRules[x];
         /* 需作品 / 需录音 / 无需资料 —— 一眼看出这个部门要不要准备东西 */
         const tag = !rule ? '无需资料'
@@ -697,6 +845,18 @@
 
     $$('input[name="hasExperience"], input[name="otherClub"], input[name="department"]').forEach(r => {
       r.addEventListener('change', () => { refreshConditional(); scheduleDraft(); updateFillState(); });
+    });
+
+    /* 配置里新增的条件题：前置字段变化时也重新计算显隐（上面三题已绑定，避免重复） */
+    const boundCondFields = ['hasExperience', 'otherClub', 'department'];
+    const condFieldNames = Array.from(new Set(formFields()
+      .filter(f => f.showIf && f.showIf.field)
+      .map(f => f.showIf.field)))
+      .filter(name => boundCondFields.indexOf(name) < 0);
+    condFieldNames.forEach(name => {
+      $$(`input[name="${name}"]`).forEach(r => {
+        r.addEventListener('change', () => { refreshConditional(); scheduleDraft(); updateFillState(); });
+      });
     });
 
     $('#applyForm').addEventListener('input', e => {

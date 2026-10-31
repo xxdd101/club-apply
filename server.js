@@ -22,6 +22,7 @@ const store = require('./lib/store');
 const auth = require('./lib/auth');
 const system = require('./lib/system');
 const reviewState = require('./lib/review-state');
+const formConfig = require('./lib/form-config');
 const { validateApplication, validateReview } = require('./lib/validate');
 const { probeDuration } = require('./lib/audio-duration');
 const { buildExportBuffer } = require('./lib/export-xlsx');
@@ -77,6 +78,17 @@ const PAGES = {
   '/admin.html': 'admin.html'
 };
 
+const INDEX_FILE = path.join(cfg.PUBLIC_DIR, 'index.html');
+
+/** 填写页模板 + config/form.json 渲染出的题目（每次请求读取，改配置后刷新即生效） */
+function renderIndexHtml() {
+  const tpl = fs.readFileSync(INDEX_FILE, 'utf8');
+  const sections = formConfig.sectionsHtml();
+  return tpl
+    .replace(/^[ \t]*<!--FORM_FIELDS-->/m, () => sections)
+    .replace(/\{\{FIELD_COUNT\}\}/g, String(formConfig.fieldCount()));
+}
+
 function safeJoin(base, rel) {
   const p = path.normalize(path.join(base, rel));
   return (p === base || p.startsWith(base + path.sep)) ? p : null;
@@ -110,6 +122,25 @@ function serveStatic(req, res, pathname, u) {
   if (!stat || !stat.isFile()) {
     res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
     return res.end('<meta charset="utf-8"><h2>404 · 页面不存在</h2><p><a href="/">返回入社申请表</a></p>');
+  }
+
+  /* 填写页：把 <!--FORM_FIELDS--> 换成 config/form.json 渲染出的题目 */
+  if (fp === INDEX_FILE) {
+    let html;
+    try {
+      html = renderIndexHtml();
+    } catch (e) {
+      console.error('[表单配置] 渲染失败：', e.message);
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
+      return res.end('500 · 表单配置读取失败：' + e.message);
+    }
+    const buf = Buffer.from(html, 'utf8');
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': buf.length,
+      'Cache-Control': 'no-cache'
+    });
+    return res.end(buf);
   }
 
   const type = MIME[path.extname(fp).toLowerCase()] || 'application/octet-stream';
@@ -546,7 +577,9 @@ async function handleApi(req, res, u, p) {
       minAudioSeconds: cfg.MIN_AUDIO_SECONDS,
       statusLabelsAdmin: STATUS_LABEL_ADMIN,
       statusLabelsPublic: STATUS_LABEL_PUBLIC,
-      workHours: '9:00-23:59'
+      workHours: '9:00-23:59',
+      /* 题目字段表：前端据此收集 / 校验 / 回填配置里新增的字段 */
+      form: formConfig.publicFields()
     });
   }
 
@@ -644,11 +677,20 @@ async function handleApi(req, res, u, p) {
     }
     const body = await readJson(req);
     const { errors, data } = validateApplication(body);
-    if (errors.length) return sendJson(res, 400, { ok: false, error: errors[0], errors });
+    /* config/form.json 里新增的字段：通用校验（原有 26 题仍由 validateApplication 校验） */
+    const extraErrors = formConfig.validateExtras(body);
+    const allErrors = errors.concat(extraErrors.map(e => e.message));
+    if (allErrors.length) {
+      return sendJson(res, 400, {
+        ok: false,
+        error: extraErrors.length ? allErrors.join('；') : allErrors[0],
+        errors: allErrors
+      });
+    }
 
     store.appDb.seq += 1;
     const now = new Date();
-    const rec = Object.assign({}, data, {
+    const rec = Object.assign({}, data, formConfig.extrasData(body), {
       id: 'APP-' + now.getTime().toString(36) + '-' + crypto.randomBytes(4).toString('hex'),
       seq: store.appDb.seq,
       createdAt: now.toISOString(),
@@ -772,10 +814,18 @@ async function handleApi(req, res, u, p) {
       return sendJson(res, 409, { ok: false, error: resubmitDenyText(rec, rs) });
     }
     const { errors, data } = validateApplication(body);
-    if (errors.length) return sendJson(res, 400, { ok: false, error: errors[0], errors });
+    const extraErrors = formConfig.validateExtras(body);
+    const allErrors = errors.concat(extraErrors.map(e => e.message));
+    if (allErrors.length) {
+      return sendJson(res, 400, {
+        ok: false,
+        error: extraErrors.length ? allErrors.join('；') : allErrors[0],
+        errors: allErrors
+      });
+    }
 
     /* 原地更新：id / seq / 首次提交时间保持不变，保证是「同一份申请表」 */
-    Object.assign(rec, data);
+    Object.assign(rec, data, formConfig.extrasData(body));
     rec.status = STATUS.RESUBMITTED;
     rec.resubmitCount = rs.count + 1;          // 消耗本次可用机会
     rec.resubmitUsed = true;

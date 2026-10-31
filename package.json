@@ -1,7 +1,7 @@
 {
   "name": "club-apply",
-  "version": "2.0.0",
-  "description": "示例动漫社 · 入社申请填写 + 审核管理系统（用户填写端 / 审核状态查询 / 审核管理后台）",
+  "version": "2.1.0",
+  "description": "通用申请审核系统：在线填表 + 附件上传 + 多人审核 + 状态查询（字段由 config/form.json 配置）",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

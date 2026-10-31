@@ -13,7 +13,7 @@
     getToken, setSession, getAdmin, clearSession, lightbox, statusClass
   } = window.App;
 
-  let META = { departments: [], workRules: {}, rejectReasons: ['拥有其他社会性质社团', '不符合入社部门要求', '其他'] };
+  let META = { departments: [], workRules: {}, rejectReasons: ['拥有其他社会性质社团', '不符合入社部门要求', '其他'], form: [] };
   /**
    * 该部门在申请阶段是否需要提交作品资料。
    *   · workRules 还没从服务端拿到（空对象）→ 一律按「需要」处理，避免误显示「无需资料」
@@ -339,11 +339,60 @@
     return [a.province, a.city].filter(Boolean).join(' / ');
   }
 
-  function renderDetail(resp) {
-    const a = CURRENT;
-    $('#detailSeq').textContent = `第 ${a.seq} 号申请 · ${a.id}`;
+  /* 记录里不是「表单答案」的内部字段：兜底展示时要跳过 */
+  const INTERNAL_KEYS = new Set([
+    'id', 'seq', 'status', 'createdAt', 'createdAtText', 'viewedAt', 'viewedAtText', 'viewedBy',
+    'reviewedAt', 'reviewedAtText', 'reviewedBy', 'recommendedDepartment', 'rejectReason',
+    'rejectReasonCode', 'returnReason', 'returnedAt', 'returnedAtText', 'returnedBy',
+    'escalatedAt', 'escalatedAtText', 'escalatedBy', 'intervened', 'intervenedAt',
+    'intervenedAtText', 'intervenedBy', 'intervenedFromStatus', 'intervenedFromText',
+    'intervenedResolvedAt', 'intervenedResolvedAtText', 'reviewedViaIntervene',
+    'reviewedViaInterveneBy', 'reviewedViaInterveneAtText', 'resubmitCount', 'resubmitUsed',
+    'resubmittedAt', 'resubmittedAtText', 'resubmitMax', 'urgeCount', 'lastUrgeAt',
+    'lastUrgeAtText', 'urgeLog', 'workImages', 'workAudio', 'city'
+  ]);
 
-    const rows = [
+  /** 配置里没有、但数据里有的字段（老数据 / 手改配置后遗留）追加兜底显示 */
+  function extraDetailRows(a, known) {
+    const out = [];
+    Object.keys(a || {}).forEach(k => {
+      if (known.has(k) || INTERNAL_KEYS.has(k)) return;
+      const v = a[k];
+      if (v === undefined || v === null || v === '') return;
+      if (typeof v !== 'string' && typeof v !== 'number') return;
+      out.push([k, String(v)]);
+    });
+    return out;
+  }
+
+  /** 按 config/form.json 的字段顺序生成详情行（label 用配置里的 label，带单位的拼上单位） */
+  function detailRows(a) {
+    const form = Array.isArray(META.form) ? META.form : [];
+    if (!form.length) return legacyDetailRows(a);
+    const rows = [];
+    const known = new Set();
+    form.forEach(f => {
+      if (!f || !f.id || known.has(f.id)) return;
+      known.add(f.id);
+      if (f.type === 'images' || f.type === 'audio') return;   // 附件由下方画廊 / 播放器展示
+      if (f.id === 'city') return;                             // 已并入「所在地」
+      let v;
+      if (f.type === 'region' || f.id === 'province') v = locality(a);
+      else {
+        const raw = a[f.id];
+        if (raw === undefined || raw === null || raw === '' || typeof raw === 'object') return;
+        v = String(raw);
+        if (f.unit) v += ' ' + f.unit;
+      }
+      if (v !== '' && v !== undefined && v !== null) rows.push([f.adminLabel || f.label, v]);
+    });
+    rows.push(['提交时间', a.createdAtText]);
+    return rows.concat(extraDetailRows(a, known));
+  }
+
+  /** 拿不到 /api/meta 的 form 时的兜底（与改造前完全一致） */
+  function legacyDetailRows(a) {
+    return [
       ['CN 代称', a.cn],
       ['QQ 号', a.qq || '—'],
       ['真实年龄', a.age + ' 岁'],
@@ -365,6 +414,13 @@
       ['邀请人 CN', a.inviterCn],
       ['提交时间', a.createdAtText]
     ].filter(([, v]) => v !== '' && v !== undefined && v !== null);
+  }
+
+  function renderDetail(resp) {
+    const a = CURRENT;
+    $('#detailSeq').textContent = `第 ${a.seq} 号申请 · ${a.id}`;
+
+    const rows = detailRows(a);
 
     const gridHtml = rows.map(([k, v]) =>
       `<div class="detail-item"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`).join('');
@@ -1473,6 +1529,8 @@
       META.departments = meta.data.departments || META.departments;
       META.workRules = meta.data.workRules || META.workRules || {};
       META.rejectReasons = meta.data.rejectReasons || META.rejectReasons;
+      /* 题目字段表：详情页按它生成字段行（老版本服务端没有 form 时用兜底行） */
+      if (Array.isArray(meta.data.form)) META.form = meta.data.form;
     }
     $('#fDept').innerHTML = '<option value="">全部部门</option>' +
       META.departments.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
