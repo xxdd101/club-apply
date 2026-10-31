@@ -10,7 +10,7 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-> 🇨🇳 **国内访问慢？** 用 Gitee 镜像：[gitee.com/fate101/club-apply](https://gitee.com/fate101/club-apply)
+> 🇨🇳 **国内访问慢？** 国内镜像：[Gitee](https://gitee.com/fate101/club-apply) · [GitCode](https://gitcode.com/xuenze/club-apply)
 
 一套开箱即用的**通用「申请表 + 审核流」系统**：**在线填表 → 附件上传 → 多人审核 → 状态自助查询**。
 

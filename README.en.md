@@ -8,7 +8,7 @@
 
 [简体中文](README.md) | **English**
 
-> 🇨🇳 China mirror (faster access from mainland): [gitee.com/fate101/club-apply](https://gitee.com/fate101/club-apply)
+> 🇨🇳 China mirrors (faster from mainland): [Gitee](https://gitee.com/fate101/club-apply) · [GitCode](https://gitcode.com/xuenze/club-apply)
 
 A self-hosted **form + review workflow** system: people fill in an online form and upload attachments,
 reviewers approve / reject / send back, and applicants can check their own status.
